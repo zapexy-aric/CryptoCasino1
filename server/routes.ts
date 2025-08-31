@@ -1,7 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./auth";
+import { setupAuth, isAuthenticated, isAdmin } from "./auth";
+import { sendBalanceUpdate } from "./websocket";
 import { insertGameSessionSchema, insertTransactionSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -50,6 +51,7 @@ export function registerRoutes(app: Express): Server {
       const currentBalance = user.balance || "0";
       const newBalance = (parseFloat(currentBalance) - parseFloat(betAmount)).toString();
       await storage.updateUserBalance(userId, newBalance);
+      sendBalanceUpdate(userId, newBalance);
 
       // Create bet transaction
       await storage.createTransaction({
@@ -166,6 +168,7 @@ export function registerRoutes(app: Express): Server {
         const currentBalance = user?.balance || "0";
         const newBalance = (parseFloat(currentBalance) + payout).toString();
         await storage.updateUserBalance(userId, newBalance);
+        sendBalanceUpdate(userId, newBalance);
 
         // Create win transaction
         await storage.createTransaction({
@@ -245,11 +248,6 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "Insufficient balance" });
       }
 
-      // Deduct amount from balance
-      const currentBalance = user.balance || "0";
-      const newBalance = (parseFloat(currentBalance) - parseFloat(amount)).toString();
-      await storage.updateUserBalance(userId, newBalance);
-
       const transaction = await storage.createTransaction({
         userId,
         type: 'withdrawal',
@@ -274,6 +272,170 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error fetching transactions:", error);
       res.status(500).json({ message: "Failed to fetch transactions" });
+    }
+  });
+
+  // Admin routes
+  app.get('/api/admin/transactions', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { status } = req.query;
+      const transactions = await storage.getAllTransactions({ status: status as string });
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error fetching all transactions:", error);
+      res.status(500).json({ message: "Failed to fetch all transactions" });
+    }
+  });
+
+  app.post('/api/admin/transactions/:id/approve', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const transaction = await storage.getTransaction(id);
+
+      if (!transaction) {
+        return res.status(404).json({ message: "Transaction not found" });
+      }
+
+      if (transaction.status !== 'pending') {
+        return res.status(400).json({ message: "Transaction is not pending" });
+      }
+
+      if (transaction.type === 'deposit') {
+        const user = await storage.getUser(transaction.userId);
+        if (user) {
+          const newBalance = (parseFloat(user.balance || "0") + parseFloat(transaction.amount)).toString();
+          await storage.updateUserBalance(transaction.userId, newBalance);
+          sendBalanceUpdate(transaction.userId, newBalance);
+        }
+      } else if (transaction.type === 'withdrawal') {
+        const user = await storage.getUser(transaction.userId);
+        if (!user || parseFloat(user.balance || "0") < parseFloat(transaction.amount)) {
+          // Not enough balance, reject the transaction
+          const updatedTransaction = await storage.updateTransactionStatus(id, 'failed');
+          return res.status(400).json({ message: "User has insufficient balance for this withdrawal.", transaction: updatedTransaction });
+        }
+        const newBalance = (parseFloat(user.balance || "0") - parseFloat(transaction.amount)).toString();
+        await storage.updateUserBalance(transaction.userId, newBalance);
+        sendBalanceUpdate(transaction.userId, newBalance);
+      }
+
+      const updatedTransaction = await storage.updateTransactionStatus(id, 'completed');
+      res.json(updatedTransaction);
+    } catch (error) {
+      console.error("Error approving transaction:", error);
+      res.status(500).json({ message: "Failed to approve transaction" });
+    }
+  });
+
+  app.post('/api/admin/transactions/:id/reject', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const transaction = await storage.getTransaction(id);
+
+      if (!transaction) {
+        return res.status(404).json({ message: "Transaction not found" });
+      }
+
+      if (transaction.status !== 'pending') {
+        return res.status(400).json({ message: "Transaction is not pending" });
+      }
+
+      if (transaction.type === 'withdrawal') {
+        // Refund the user's balance
+        const user = await storage.getUser(transaction.userId);
+        if (user) {
+          const newBalance = (parseFloat(user.balance || "0") + parseFloat(transaction.amount)).toString();
+          await storage.updateUserBalance(transaction.userId, newBalance);
+        }
+      }
+
+      const updatedTransaction = await storage.updateTransactionStatus(id, 'failed');
+      res.json(updatedTransaction);
+    } catch (error) {
+      console.error("Error rejecting transaction:", error);
+      res.status(500).json({ message: "Failed to reject transaction" });
+    }
+  });
+
+  app.get('/api/admin/users', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching all users:", error);
+      res.status(500).json({ message: "Failed to fetch all users" });
+    }
+  });
+
+  app.get('/api/admin/users/:id', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const user = await storage.getUser(id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      const transactions = await storage.getUserTransactions(id);
+      res.json({ ...user, transactions });
+    } catch (error) {
+      console.error("Error fetching user details:", error);
+      res.status(500).json({ message: "Failed to fetch user details" });
+    }
+  });
+
+  app.post('/api/admin/users/adjust-balance', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { username, amount } = req.body;
+      const user = await storage.getUserByUsername(username);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const newBalance = (parseFloat(user.balance || "0") + parseFloat(amount)).toString();
+      await storage.updateUserBalance(user.id, newBalance);
+      sendBalanceUpdate(user.id, newBalance);
+
+      await storage.createTransaction({
+        userId: user.id,
+        type: 'adjustment',
+        amount: amount.toString(),
+        currency: 'USDT',
+        status: 'completed',
+      });
+
+      res.json({ message: "Balance adjusted successfully", newBalance });
+    } catch (error) {
+      console.error("Error adjusting balance:", error);
+      res.status(500).json({ message: "Failed to adjust balance" });
+    }
+  });
+
+  // Image management routes
+  app.get('/api/images', async (req, res) => {
+    try {
+      const images = await storage.getSiteImages();
+      const imageUrls = images.reduce((acc, img) => {
+        acc[img.key] = img.url;
+        return acc;
+      }, {} as Record<string, string>);
+      res.json(imageUrls);
+    } catch (error) {
+      console.error("Error fetching images:", error);
+      res.status(500).json({ message: "Failed to fetch images" });
+    }
+  });
+
+  app.post('/api/admin/images', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { key, url } = req.body;
+      if (!key || !url) {
+        return res.status(400).json({ message: "Key and URL are required" });
+      }
+      const image = await storage.upsertSiteImage(key, url);
+      res.json(image);
+    } catch (error) {
+      console.error("Error saving image:", error);
+      res.status(500).json({ message: "Failed to save image" });
     }
   });
 

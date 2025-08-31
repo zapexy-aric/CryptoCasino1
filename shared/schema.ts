@@ -81,6 +81,11 @@ export const bigWins = pgTable("big_wins", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const siteImages = pgTable("site_images", {
+  key: varchar("key").primaryKey(),
+  url: text("url").notNull(),
+});
+
 export type InsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
