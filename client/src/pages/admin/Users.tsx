@@ -44,7 +44,7 @@ export function AdminUsers() {
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{user.mobile}</TableCell>
                   <TableCell>{user.balance}</TableCell>
-                  <TableCell>{user.role}</TableCell>
+                <TableCell>{user.role || 'user'}</TableCell>
                   <TableCell>
                     <Link href={`/admin/users/${user.id}`} className="text-blue-500 hover:underline">
                       View Details
@@ -60,7 +60,7 @@ export function AdminUsers() {
               <div key={user.id} className="bg-white p-4 rounded-lg shadow">
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-semibold">{user.username}</span>
-                  <span className={`text-sm font-bold ${user.role === 'admin' ? 'text-red-500' : 'text-gray-500'}`}>{user.role}</span>
+                  <span className={`text-sm font-bold ${user.role === 'admin' ? 'text-red-500' : 'text-gray-500'}`}>{user.role || 'user'}</span>
                 </div>
                 <p>ID: {user.id}</p>
                 <p>Email: {user.email}</p>

@@ -18,7 +18,7 @@ declare global {
       firstName: string | null;
       lastName: string | null;
       balance: string | null;
-      role: string;
+      role: string | null;
       createdAt: Date | null;
       updatedAt: Date | null;
     }
