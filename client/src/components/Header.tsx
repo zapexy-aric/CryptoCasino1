@@ -1,10 +1,26 @@
 import { User } from "@shared/schema";
+import { useAuth } from "@/hooks/useAuth";
 
 interface HeaderProps {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
   isAuthenticated: boolean;
   user?: User;
+}
+
+function LogoutButton() {
+  const { logout, isLoggingOut } = useAuth();
+  
+  return (
+    <button 
+      onClick={logout}
+      disabled={isLoggingOut}
+      className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+      data-testid="button-logout"
+    >
+      {isLoggingOut ? "Logging out..." : "Logout"}
+    </button>
+  );
 }
 
 export default function Header({ sidebarOpen, setSidebarOpen, isAuthenticated, user }: HeaderProps) {
@@ -41,14 +57,14 @@ export default function Header({ sidebarOpen, setSidebarOpen, isAuthenticated, u
           {!isAuthenticated ? (
             <>
               <button 
-                onClick={() => window.location.href = "/api/login"}
+                onClick={() => window.location.href = "/auth"}
                 className="px-4 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors"
                 data-testid="button-login"
               >
                 Login
               </button>
               <button 
-                onClick={() => window.location.href = "/api/login"}
+                onClick={() => window.location.href = "/auth"}
                 className="px-6 py-2 bg-gradient-to-r from-primary to-accent text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity glow-effect"
                 data-testid="button-signup"
               >
@@ -57,24 +73,10 @@ export default function Header({ sidebarOpen, setSidebarOpen, isAuthenticated, u
             </>
           ) : (
             <div className="flex items-center space-x-3">
-              {user?.profileImageUrl && (
-                <img 
-                  src={user.profileImageUrl} 
-                  alt="Profile" 
-                  className="w-8 h-8 rounded-full object-cover"
-                  data-testid="img-avatar"
-                />
-              )}
               <span className="text-sm font-medium" data-testid="text-username">
-                {user?.firstName || 'Player'}
+                {user?.firstName || user?.username || 'Player'}
               </span>
-              <button 
-                onClick={() => window.location.href = "/api/logout"}
-                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                data-testid="button-logout"
-              >
-                Logout
-              </button>
+              <LogoutButton />
             </div>
           )}
         </div>

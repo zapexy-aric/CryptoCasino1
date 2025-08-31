@@ -46,7 +46,7 @@ export default function Landing() {
                   Sign Up & Get <span className="text-yellow-400 font-bold">UP TO $20,000</span>
                 </p>
                 <button 
-                  onClick={() => window.location.href = "/api/login"}
+                  onClick={() => window.location.href = "/auth"}
                   className="px-8 py-4 bg-white text-black font-bold rounded-xl text-lg hover:bg-yellow-400 transition-colors pulse-glow"
                   data-testid="button-join-now"
                 >

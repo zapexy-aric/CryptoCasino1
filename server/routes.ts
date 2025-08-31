@@ -1,30 +1,18 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated } from "./auth";
 import { insertGameSessionSchema, insertTransactionSchema } from "@shared/schema";
 import { z } from "zod";
 
-export async function registerRoutes(app: Express): Promise<Server> {
+export function registerRoutes(app: Express): Server {
   // Auth middleware
-  await setupAuth(app);
-
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
+  setupAuth(app);
 
   // Game session routes
   app.post('/api/games/mines/start', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { betAmount, minesCount } = req.body;
 
       // Validate input
@@ -85,7 +73,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/games/mines/reveal', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { sessionId, cellIndex } = req.body;
 
       const session = await storage.getActiveGameSession(userId, 'mines');
@@ -155,7 +143,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/games/mines/cashout', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { sessionId } = req.body;
 
       const session = await storage.getActiveGameSession(userId, 'mines');
@@ -225,7 +213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Transaction routes
   app.post('/api/transactions/deposit', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { amount, currency, method, address } = req.body;
 
       const transaction = await storage.createTransaction({
@@ -247,7 +235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/transactions/withdraw', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { amount, currency, address } = req.body;
 
       // Check user balance
@@ -280,7 +268,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/transactions', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const transactions = await storage.getUserTransactions(userId);
       res.json(transactions);
     } catch (error) {

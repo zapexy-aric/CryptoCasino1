@@ -25,14 +25,17 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// User storage table.
-// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+// User storage table for local authentication
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  username: varchar("username").unique().notNull(),
   email: varchar("email").unique(),
+  mobile: varchar("mobile").notNull(),
+  password: varchar("password").notNull(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
-  profileImageUrl: varchar("profile_image_url"),
+  referralCode: varchar("referral_code"),
+  referredBy: varchar("referred_by"),
   balance: decimal("balance", { precision: 20, scale: 8 }).default("0"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -78,7 +81,7 @@ export const bigWins = pgTable("big_wins", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export type UpsertUser = typeof users.$inferInsert;
+export type InsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
 export type InsertGameSession = typeof gameSessions.$inferInsert;
@@ -100,4 +103,23 @@ export const insertTransactionSchema = createInsertSchema(transactions).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+});
+
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  referredBy: true,
+});
+
+export const registerUserSchema = insertUserSchema.extend({
+  confirmPassword: z.string().min(8, "Password must be at least 8 characters"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+export const loginUserSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
 });
