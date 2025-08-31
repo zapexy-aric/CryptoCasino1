@@ -15,7 +15,7 @@ import {
   type SiteImage,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sum } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -39,6 +39,7 @@ export interface IStorage {
   getAllTransactions(filters: { status?: string }): Promise<Transaction[]>;
   getTransaction(id: string): Promise<Transaction | undefined>;
   updateTransactionStatus(id: string, status: 'completed' | 'failed'): Promise<Transaction>;
+  getPendingWithdrawalSum(userId: string): Promise<number>;
   
   // Big wins operations
   createBigWin(bigWin: InsertBigWin): Promise<BigWin>;
@@ -54,22 +55,78 @@ export class DatabaseStorage implements IStorage {
   // (IMPORTANT) these user operations are mandatory for Replit Auth.
 
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
+    const [user] = await db.select({
+      id: users.id,
+      username: users.username,
+      email: users.email,
+      mobile: users.mobile,
+      password: users.password,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      referralCode: users.referralCode,
+      referredBy: users.referredBy,
+      balance: users.balance,
+      role: users.role,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+    }).from(users).where(eq(users.id, id));
     return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+    const [user] = await db.select({
+      id: users.id,
+      username: users.username,
+      email: users.email,
+      mobile: users.mobile,
+      password: users.password,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      referralCode: users.referralCode,
+      referredBy: users.referredBy,
+      balance: users.balance,
+      role: users.role,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+    }).from(users).where(eq(users.username, username));
     return user;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
+    const [user] = await db.select({
+      id: users.id,
+      username: users.username,
+      email: users.email,
+      mobile: users.mobile,
+      password: users.password,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      referralCode: users.referralCode,
+      referredBy: users.referredBy,
+      balance: users.balance,
+      role: users.role,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+    }).from(users).where(eq(users.email, email));
     return user;
   }
 
   async getUserByReferralCode(referralCode: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.referralCode, referralCode));
+    const [user] = await db.select({
+      id: users.id,
+      username: users.username,
+      email: users.email,
+      mobile: users.mobile,
+      password: users.password,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      referralCode: users.referralCode,
+      referredBy: users.referredBy,
+      balance: users.balance,
+      role: users.role,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+    }).from(users).where(eq(users.referralCode, referralCode));
     return user;
   }
 
@@ -77,7 +134,21 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db
       .insert(users)
       .values(userData)
-      .returning();
+      .returning({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        mobile: users.mobile,
+        password: users.password,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        referralCode: users.referralCode,
+        referredBy: users.referredBy,
+        balance: users.balance,
+        role: users.role,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+      });
     return user;
   }
 
@@ -89,7 +160,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllUsers(): Promise<User[]> {
-    return await db.select().from(users).orderBy(desc(users.createdAt));
+    return await db.select({
+      id: users.id,
+      username: users.username,
+      email: users.email,
+      mobile: users.mobile,
+      password: users.password,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      referralCode: users.referralCode,
+      referredBy: users.referredBy,
+      balance: users.balance,
+      role: users.role,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+    }).from(users).orderBy(desc(users.createdAt));
   }
 
   // Game session operations
@@ -162,6 +247,19 @@ export class DatabaseStorage implements IStorage {
       .where(eq(transactions.id, id))
       .returning();
     return transaction;
+  }
+
+  async getPendingWithdrawalSum(userId: string): Promise<number> {
+    const result = await db
+      .select({ total: sum(transactions.amount) })
+      .from(transactions)
+      .where(and(
+        eq(transactions.userId, userId),
+        eq(transactions.type, 'withdrawal'),
+        eq(transactions.status, 'pending')
+      ));
+
+    return parseFloat(result[0]?.total || "0");
   }
 
   // Big wins operations

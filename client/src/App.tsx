@@ -12,6 +12,7 @@ import Mines from "@/pages/mines";
 import NotFound from "@/pages/not-found";
 import { AdminDashboard } from "@/pages/admin/Dashboard";
 import { AdminUsers } from "@/pages/admin/Users";
+import { AdminUserDetails } from "@/pages/admin/UserDetails";
 import { AdminImages } from "@/pages/admin/Images";
 import { AdminRoute } from "@/components/admin/AdminRoute";
 
@@ -38,6 +39,11 @@ function Router() {
           <Route path="/admin/users">
             <AdminRoute>
               <AdminUsers />
+            </AdminRoute>
+          </Route>
+          <Route path="/admin/users/:id">
+            <AdminRoute>
+              <AdminUserDetails />
             </AdminRoute>
           </Route>
           <Route path="/admin/images">

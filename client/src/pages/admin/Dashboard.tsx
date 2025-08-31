@@ -95,7 +95,7 @@ export function AdminDashboard() {
                   <TableCell>{tx.type}</TableCell>
                   <TableCell>{tx.amount}</TableCell>
                   <TableCell>{tx.currency}</TableCell>
-                  <TableCell>{new Date(tx.createdAt).toLocaleString()}</TableCell>
+                <TableCell>{tx.createdAt ? new Date(tx.createdAt).toLocaleString() : 'N/A'}</TableCell>
                   <TableCell>
                     <Button
                       size="sm"
@@ -124,7 +124,7 @@ export function AdminDashboard() {
               <div key={tx.id} className="bg-white p-4 rounded-lg shadow">
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-semibold">{tx.type}</span>
-                  <span className="text-sm text-gray-500">{new Date(tx.createdAt).toLocaleDateString()}</span>
+                  <span className="text-sm text-gray-500">{tx.createdAt ? new Date(tx.createdAt).toLocaleDateString() : 'N/A'}</span>
                 </div>
                 <p>User ID: {tx.userId}</p>
                 <p>Amount: {tx.amount} {tx.currency}</p>

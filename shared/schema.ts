@@ -37,8 +37,14 @@ export const users = pgTable("users", {
   referralCode: varchar("referral_code"),
   referredBy: varchar("referred_by"),
   balance: decimal("balance", { precision: 20, scale: 8 }).default("0"),
+  role: varchar("role").default("user"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const siteImages = pgTable("site_images", {
+  key: varchar("key").primaryKey(),
+  url: text("url").notNull(),
 });
 
 // Game sessions for tracking player games
@@ -81,13 +87,22 @@ export const bigWins = pgTable("big_wins", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const siteImages = pgTable("site_images", {
-  key: varchar("key").primaryKey(),
-  url: text("url").notNull(),
-});
-
 export type InsertUser = typeof users.$inferInsert;
-export type User = typeof users.$inferSelect;
+export type User = {
+  id: string;
+  username: string;
+  email: string | null;
+  mobile: string;
+  password: string;
+  firstName: string | null;
+  lastName: string | null;
+  referralCode: string | null;
+  referredBy: string | null;
+  balance: string | null;
+  role: string | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+};
 
 export type InsertGameSession = typeof gameSessions.$inferInsert;
 export type GameSession = typeof gameSessions.$inferSelect;
@@ -97,6 +112,8 @@ export type Transaction = typeof transactions.$inferSelect;
 
 export type InsertBigWin = typeof bigWins.$inferInsert;
 export type BigWin = typeof bigWins.$inferSelect;
+
+export type SiteImage = typeof siteImages.$inferSelect;
 
 export const insertGameSessionSchema = createInsertSchema(gameSessions).omit({
   id: true,

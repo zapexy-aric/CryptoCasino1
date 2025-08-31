@@ -241,11 +241,16 @@ export function registerRoutes(app: Express): Server {
       const userId = req.user.id;
       const { amount, currency, address } = req.body;
 
-      // Check user balance
       const user = await storage.getUser(userId);
-      const userBalance = user?.balance || "0";
-      if (!user || parseFloat(userBalance) < parseFloat(amount)) {
-        return res.status(400).json({ message: "Insufficient balance" });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const pendingWithdrawalSum = await storage.getPendingWithdrawalSum(userId);
+      const availableBalance = parseFloat(user.balance || "0") - pendingWithdrawalSum;
+
+      if (availableBalance < parseFloat(amount)) {
+        return res.status(400).json({ message: "Insufficient available balance" });
       }
 
       const transaction = await storage.createTransaction({
@@ -338,15 +343,6 @@ export function registerRoutes(app: Express): Server {
 
       if (transaction.status !== 'pending') {
         return res.status(400).json({ message: "Transaction is not pending" });
-      }
-
-      if (transaction.type === 'withdrawal') {
-        // Refund the user's balance
-        const user = await storage.getUser(transaction.userId);
-        if (user) {
-          const newBalance = (parseFloat(user.balance || "0") + parseFloat(transaction.amount)).toString();
-          await storage.updateUserBalance(transaction.userId, newBalance);
-        }
       }
 
       const updatedTransaction = await storage.updateTransactionStatus(id, 'failed');

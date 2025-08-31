@@ -49,13 +49,12 @@ export function setupWebSocket(server: Server) {
 
     ws.on('close', () => {
       // Find the user and remove them from the clients map
-      for (const [userId, clientWs] of clients.entries()) {
+      clients.forEach((clientWs, userId) => {
         if (clientWs === ws) {
           clients.delete(userId);
           console.log(`WebSocket client disconnected: ${userId}`);
-          break;
         }
-      }
+      });
     });
   });
 }
