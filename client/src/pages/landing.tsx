@@ -39,15 +39,15 @@ export default function Landing() {
             <div className="relative h-80 bg-gradient-to-r from-primary via-accent to-blue-500 flex items-center justify-center">
               <div className="absolute inset-0 bg-black/20"></div>
               <div className="relative z-10 text-center px-4">
-                <h1 className="text-5xl md:text-7xl font-black text-white mb-4 floating">
+                <h1 className="text-4xl sm:text-5xl md:text-7xl font-black text-white mb-4 floating">
                   STAY UNTAMED
                 </h1>
-                <p className="text-xl md:text-2xl text-white/90 mb-6">
+                <p className="text-lg sm:text-xl md:text-2xl text-white/90 mb-6">
                   Sign Up & Get <span className="text-yellow-400 font-bold">UP TO $20,000</span>
                 </p>
                 <button 
                   onClick={() => window.location.href = "/auth"}
-                  className="px-8 py-4 bg-white text-black font-bold rounded-xl text-lg hover:bg-yellow-400 transition-colors pulse-glow"
+                  className="px-6 py-3 sm:px-8 sm:py-4 bg-white text-black font-bold rounded-xl text-base sm:text-lg hover:bg-yellow-400 transition-colors pulse-glow"
                   data-testid="button-join-now"
                 >
                   Join Now
@@ -56,7 +56,7 @@ export default function Landing() {
             </div>
           </section>
 
-          <div className="p-4 md:p-6 space-y-8">
+          <div className="p-2 sm:p-4 md:p-6 space-y-6 sm:space-y-8">
             <RecentWins />
             <GameCategories onMinesClick={() => setMinesModalOpen(true)} />
             <BCOriginals onMinesClick={() => setMinesModalOpen(true)} />

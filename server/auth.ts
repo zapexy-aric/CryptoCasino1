@@ -18,6 +18,7 @@ declare global {
       firstName: string | null;
       lastName: string | null;
       balance: string | null;
+      role: string;
       createdAt: Date | null;
       updatedAt: Date | null;
     }
@@ -146,6 +147,7 @@ export function setupAuth(app: Express) {
           firstName: user.firstName,
           lastName: user.lastName,
           balance: user.balance,
+          role: user.role,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
         });
@@ -185,6 +187,7 @@ export function setupAuth(app: Express) {
             firstName: user.firstName,
             lastName: user.lastName,
             balance: user.balance,
+            role: user.role,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
           });
@@ -222,6 +225,7 @@ export function setupAuth(app: Express) {
       firstName: req.user.firstName,
       lastName: req.user.lastName,
       balance: req.user.balance,
+      role: req.user.role,
       createdAt: req.user.createdAt,
       updatedAt: req.user.updatedAt,
     });
@@ -234,4 +238,12 @@ export function isAuthenticated(req: any, res: any, next: any) {
     return next();
   }
   res.status(401).json({ message: "Unauthorized" });
+}
+
+// Middleware to check if user is an admin
+export function isAdmin(req: any, res: any, next: any) {
+  if (req.isAuthenticated() && req.user.role === 'admin') {
+    return next();
+  }
+  res.status(403).json({ message: "Forbidden" });
 }

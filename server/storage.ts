@@ -3,6 +3,7 @@ import {
   gameSessions,
   transactions,
   bigWins,
+  siteImages,
   type User,
   type InsertUser,
   type GameSession,
@@ -11,6 +12,7 @@ import {
   type InsertTransaction,
   type BigWin,
   type InsertBigWin,
+  type SiteImage,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
@@ -23,6 +25,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByReferralCode(referralCode: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  getAllUsers(): Promise<User[]>;
   updateUserBalance(userId: string, newBalance: string): Promise<void>;
   
   // Game session operations
@@ -33,10 +36,17 @@ export interface IStorage {
   // Transaction operations
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   getUserTransactions(userId: string): Promise<Transaction[]>;
+  getAllTransactions(filters: { status?: string }): Promise<Transaction[]>;
+  getTransaction(id: string): Promise<Transaction | undefined>;
+  updateTransactionStatus(id: string, status: 'completed' | 'failed'): Promise<Transaction>;
   
   // Big wins operations
   createBigWin(bigWin: InsertBigWin): Promise<BigWin>;
   getRecentBigWins(): Promise<BigWin[]>;
+
+  // Image management operations
+  getSiteImages(): Promise<SiteImage[]>;
+  upsertSiteImage(key: string, url: string): Promise<SiteImage>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -76,6 +86,10 @@ export class DatabaseStorage implements IStorage {
       .update(users)
       .set({ balance: newBalance, updatedAt: new Date() })
       .where(eq(users.id, userId));
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users).orderBy(desc(users.createdAt));
   }
 
   // Game session operations
@@ -125,6 +139,31 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(transactions.createdAt));
   }
 
+  async getAllTransactions(filters: { status?: string }): Promise<Transaction[]> {
+    const { status } = filters;
+    const query = db.select().from(transactions).orderBy(desc(transactions.createdAt));
+
+    if (status) {
+      query.where(eq(transactions.status, status));
+    }
+
+    return await query;
+  }
+
+  async getTransaction(id: string): Promise<Transaction | undefined> {
+    const [transaction] = await db.select().from(transactions).where(eq(transactions.id, id));
+    return transaction;
+  }
+
+  async updateTransactionStatus(id: string, status: 'completed' | 'failed'): Promise<Transaction> {
+    const [transaction] = await db
+      .update(transactions)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(transactions.id, id))
+      .returning();
+    return transaction;
+  }
+
   // Big wins operations
   async createBigWin(bigWinData: InsertBigWin): Promise<BigWin> {
     const [bigWin] = await db
@@ -140,6 +179,20 @@ export class DatabaseStorage implements IStorage {
       .from(bigWins)
       .orderBy(desc(bigWins.createdAt))
       .limit(10);
+  }
+
+  // Image management operations
+  async getSiteImages(): Promise<SiteImage[]> {
+    return await db.select().from(siteImages);
+  }
+
+  async upsertSiteImage(key: string, url: string): Promise<SiteImage> {
+    const [image] = await db
+      .insert(siteImages)
+      .values({ key, url })
+      .onConflictDoUpdate({ target: siteImages.key, set: { url } })
+      .returning();
+    return image;
   }
 }
 

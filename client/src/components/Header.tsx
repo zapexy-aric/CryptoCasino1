@@ -1,3 +1,5 @@
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { User } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -23,7 +25,17 @@ function LogoutButton() {
   );
 }
 
+async function getImages(): Promise<Record<string, string>> {
+  const res = await apiRequest("GET", "/api/images");
+  return res.json();
+}
+
 export default function Header({ sidebarOpen, setSidebarOpen, isAuthenticated, user }: HeaderProps) {
+  const { data: images } = useQuery({
+    queryKey: ["images"],
+    queryFn: getImages,
+  });
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-card/90 backdrop-blur-md border-b border-border">
       <div className="flex items-center justify-between px-4 py-3">
@@ -37,7 +49,11 @@ export default function Header({ sidebarOpen, setSidebarOpen, isAuthenticated, u
           </button>
           <div className="flex items-center space-x-2">
             <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center">
-              <i className="fas fa-gamepad text-white text-lg"></i>
+              {images?.header_logo_icon ? (
+                <img src={images.header_logo_icon} alt="logo" className="w-6 h-6" />
+              ) : (
+                <i className="fas fa-gamepad text-white text-lg"></i>
+              )}
             </div>
             <span className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               CryptoPlay

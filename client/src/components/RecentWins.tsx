@@ -9,10 +9,10 @@ export default function RecentWins() {
 
   if (isLoading) {
     return (
-      <section className="bg-card rounded-xl p-6 border border-border">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold flex items-center">
-            <i className="fas fa-trophy text-yellow-400 mr-3"></i>
+      <section className="bg-card rounded-xl p-4 sm:p-6 border border-border">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold flex items-center">
+            <i className="fas fa-trophy text-yellow-400 mr-2 sm:mr-3"></i>
             Recent Big Wins
           </h2>
         </div>
@@ -23,10 +23,10 @@ export default function RecentWins() {
 
   if (!bigWins || bigWins.length === 0) {
     return (
-      <section className="bg-card rounded-xl p-6 border border-border">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold flex items-center">
-            <i className="fas fa-trophy text-yellow-400 mr-3"></i>
+      <section className="bg-card rounded-xl p-4 sm:p-6 border border-border">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold flex items-center">
+            <i className="fas fa-trophy text-yellow-400 mr-2 sm:mr-3"></i>
             Recent Big Wins
           </h2>
         </div>
@@ -36,10 +36,10 @@ export default function RecentWins() {
   }
 
   return (
-    <section className="bg-card rounded-xl p-6 border border-border">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold flex items-center">
-          <i className="fas fa-trophy text-yellow-400 mr-3"></i>
+    <section className="bg-card rounded-xl p-4 sm:p-6 border border-border">
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold flex items-center">
+          <i className="fas fa-trophy text-yellow-400 mr-2 sm:mr-3"></i>
           Recent Big Wins
         </h2>
         <button className="text-primary hover:text-primary/80 text-sm" data-testid="button-view-all-wins">
@@ -47,7 +47,7 @@ export default function RecentWins() {
         </button>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
         {bigWins.slice(0, 6).map((win: any) => (
           <div key={win.id} className="bg-muted rounded-lg p-4 hover:bg-muted/80 transition-colors" data-testid={`card-win-${win.id}`}>
             <div className="flex items-center space-x-3">
