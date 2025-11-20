@@ -42,6 +42,13 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const telegramAdmins = pgTable("telegram_admins", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  telegramId: varchar("telegram_id").unique().notNull(),
+  username: varchar("username"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const siteImages = pgTable("site_images", {
   key: varchar("key").primaryKey(),
   url: text("url").notNull(),
